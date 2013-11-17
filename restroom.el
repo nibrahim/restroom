@@ -1,6 +1,9 @@
 (require 'elnode)
 (require 'cl)
 
+(defun restroom-error-message (message)
+  (json-encode-alist (list (cons "message" message))))
+
 (defun restroom-dispatcher (httpcon)
   (let* ( (routes (get 'restroom-dispatcher 'routes))
           (method (elnode-http-method httpcon))
@@ -12,10 +15,11 @@
             rule
           (if (member method acceptable_methods) ; Matches the method too
               (progn
-                (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
+                (elnode-http-start httpcon 200 '("Content-type" . "application/json"))
                 (elnode-http-return httpcon (funcall function httpcon)))
-            (elnode-send-status httpcon 405
-                                (format "Endpoint doesn't support %s method" (elnode-http-method httpcon)))))
+            (progn
+              (elnode-http-start httpcon 405 '("Content-type" . "application/json"))
+              (elnode-http-return httpcon (restroom-error-message (format "%s unsupported" method))))))
       (elnode-send-404 httpcon))))
 
 
